@@ -36,6 +36,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 The app still renders without keys so the UI can be reviewed before final service access is added.
 
+## Build modes
+
+- `npm run build:next` builds the plain Next.js app
+- `npm run build` builds the OpenNext Cloudflare worker and packages a Sites-ready `dist/` directory
+
 ## Supabase
 
 Apply [schema.sql](/Users/root-parth/Documents/ChadWallet/supabase/schema.sql) to create the starter `profiles`, `watchlists`, and `positions` tables.
