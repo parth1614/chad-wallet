@@ -27,7 +27,7 @@ export function PrivyAppProvider({ children }: { children: React.ReactNode }) {
         appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
         config={{
           plugins: [defaultSolanaRpcsPlugin()],
-          loginMethods: ["google", "apple"],
+          loginMethods: ["google"],
           appearance: {
             theme: "light",
             accentColor: "#ff7a00",

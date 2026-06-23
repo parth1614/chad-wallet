@@ -174,6 +174,8 @@ export function ChartCard({
       },
       rightPriceScale: {
         borderColor: "rgba(255,255,255,0.08)",
+        visible: true,
+        minimumWidth: 88,
       },
       timeScale: {
         borderColor: "rgba(255,255,255,0.08)",
@@ -197,6 +199,7 @@ export function ChartCard({
         wickUpColor: "#ffb562",
         wickDownColor: "#ff7c5c",
         priceLineColor: "#ff7a00",
+        priceScaleId: "right",
         lastValueVisible: true,
       });
 
@@ -219,6 +222,8 @@ export function ChartCard({
         bottomColor: "rgba(255, 122, 0, 0.02)",
         lineWidth: 3,
         priceLineColor: "#ff7a00",
+        priceScaleId: "right",
+        lastValueVisible: true,
       });
 
       areaSeries.setData(
@@ -399,6 +404,16 @@ export function ChartCard({
       </div>
 
       <div className="relative mt-5 overflow-hidden rounded-[1.6rem] border border-white/8 bg-black/20">
+        <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-3 rounded-full border border-white/10 bg-black/70 px-3 py-2 text-xs text-white/75 backdrop-blur">
+          <span className="font-mono uppercase tracking-[0.22em] text-white/40">Last price</span>
+          <span className="text-sm font-semibold text-white">
+            {latestCandle ? formatCurrency(latestCandle.close, 6) : "--"}
+          </span>
+          <span className={changePercent >= 0 ? "font-semibold text-[#8ef0bc]" : "font-semibold text-[#ff998f]"}>
+            {formatPercent(changePercent)}
+          </span>
+        </div>
+
         {loading ? (
           <div className="pointer-events-none absolute inset-x-4 top-4 z-10 inline-flex w-fit items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-xs text-white/72 backdrop-blur">
             <LoaderCircle className="h-3.5 w-3.5 animate-spin" />

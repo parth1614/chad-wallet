@@ -72,7 +72,7 @@ export default async function Home() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-black/65">
               ChadWallet brings fast discovery, social signal, and one-tap execution into a single Solana-native flow.
-              Sign in with Apple or Google through Privy, catch rotating runners, and jump straight into a live trade page.
+              Sign in with Google through Privy, catch rotating runners, and jump straight into a live trade page.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -177,7 +177,7 @@ export default async function Home() {
             {
               icon: ShieldCheck,
               title: "Privy-based access",
-              description: "Apple and Google auth are wired through Privy, with Solana embedded-wallet support ready as soon as the app keys are added.",
+              description: "Google auth is wired through Privy, with Solana embedded-wallet support ready as soon as the app keys are added.",
             },
           ].map((feature) => (
             <div key={feature.title} className="rounded-[2rem] border border-black/10 bg-white/72 p-6 shadow-[0_20px_60px_rgba(17,17,17,0.06)]">

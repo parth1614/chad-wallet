@@ -132,9 +132,14 @@ export async function getTrendingTokens(): Promise<TokenSummary[]> {
   }
 }
 
+async function getSeedTokenSummary(address: string): Promise<TokenSummary> {
+  const trendingMatch = (await getTrendingTokens()).find((token) => token.address === address);
+  return trendingMatch ?? sampleTrendingTokens.find((token) => token.address === address) ?? createFallbackTokenSummary(address);
+}
+
 export async function getTokenBundle(address: string): Promise<TokenDetailBundle> {
   const headers = birdeyeHeaders();
-  const fallbackSummary = sampleTrendingTokens.find((token) => token.address === address) ?? createFallbackTokenSummary(address);
+  const fallbackSummary = await getSeedTokenSummary(address);
 
   if (!headers) {
     return getSampleTokenBundle(address, fallbackSummary);
@@ -187,7 +192,7 @@ export async function getTokenBundle(address: string): Promise<TokenDetailBundle
 
 export async function getTokenChart(address: string, interval: ChartInterval = "1H"): Promise<ChartCandle[]> {
   const headers = birdeyeHeaders();
-  const fallback = getSampleTokenBundle(address, sampleTrendingTokens.find((token) => token.address === address) ?? createFallbackTokenSummary(address)).chart;
+  const fallback = getSampleTokenBundle(address, await getSeedTokenSummary(address)).chart;
 
   if (!headers) {
     return fallback;
