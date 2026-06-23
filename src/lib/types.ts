@@ -8,6 +8,7 @@ export type TokenSummary = {
   liquidity: number;
   volume24h: number;
   marketCap: number;
+  decimals?: number;
   holders?: number;
   rank?: number;
   fdv?: number;
@@ -48,6 +49,14 @@ export type JupiterQuote = {
   outAmount: string;
   priceImpactPct?: string;
   routePlan?: unknown[];
+};
+
+export type JupiterSwapTransaction = {
+  swapTransaction: string;
+  lastValidBlockHeight: number;
+  prioritizationFeeLamports?: number;
+  computeUnitLimit?: number;
+  simulationError?: unknown;
 };
 
 export type TokenDetailBundle = {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useSignTransaction, useWallets } from "@privy-io/react-auth/solana";
 import { usePrivyEnabled } from "@/components/providers/privy-provider";
 import { SOL_MINT } from "@/lib/sample-data";
 import type { TokenSummary } from "@/lib/types";
@@ -17,15 +18,64 @@ type QuoteResponse = {
   } | null;
 };
 
+type SwapPrepareResponse = {
+  quote: QuoteResponse["quote"];
+  swap: {
+    swapTransaction: string;
+    lastValidBlockHeight: number;
+  } | null;
+  error?: string;
+};
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
 function EnabledTradeComposer({ token }: { token: TokenSummary }) {
   const enabled = usePrivyEnabled();
   const { authenticated, user } = usePrivy();
+  const { signTransaction } = useSignTransaction();
+  const { ready: walletsReady, wallets } = useWallets();
   const [amount, setAmount] = useState("0.25");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [quote, setQuote] = useState<QuoteResponse["quote"] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [resultSignature, setResultSignature] = useState<string | null>(null);
+  const [tradeError, setTradeError] = useState<string | null>(null);
 
   const solanaWallet = useMemo(
+    () => wallets[0],
+    [wallets],
+  );
+
+  const tokenDecimals = token.decimals ?? 9;
+
+  function amountToRawUnits(value: string) {
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return "1";
+    }
+
+    const multiplier = side === "buy" ? 1_000_000_000 : 10 ** tokenDecimals;
+    return String(Math.max(1, Math.floor(parsed * multiplier)));
+  }
+
+  const amountInRawUnits = amountToRawUnits(amount);
+
+  const walletAddress = useMemo(
     () =>
       user?.linkedAccounts.find(
         (account) => account.type === "wallet" && account.chainType === "solana",
@@ -38,16 +88,16 @@ function EnabledTradeComposer({ token }: { token: TokenSummary }) {
 
     async function run() {
       setLoading(true);
+      setTradeError(null);
 
-      const lamports = Math.max(1, Math.floor(Number(amount || "0") * 1_000_000_000));
       const query = new URLSearchParams({
         inputMint: side === "buy" ? SOL_MINT : token.address,
         outputMint: side === "buy" ? token.address : SOL_MINT,
-        amount: String(lamports),
+        amount: amountInRawUnits,
       });
 
-      if (solanaWallet?.address) {
-        query.set("taker", solanaWallet.address);
+      if (walletAddress?.address) {
+        query.set("taker", walletAddress.address);
       }
 
       try {
@@ -65,7 +115,67 @@ function EnabledTradeComposer({ token }: { token: TokenSummary }) {
 
     void run();
     return () => controller.abort();
-  }, [amount, side, solanaWallet?.address, token.address]);
+  }, [amountInRawUnits, side, token.address, walletAddress?.address]);
+
+  async function executeTrade() {
+    if (!enabled || !authenticated || !walletsReady || !solanaWallet) {
+      return;
+    }
+
+    setSubmitting(true);
+    setTradeError(null);
+    setResultSignature(null);
+
+    try {
+      const response = await fetch("/api/swap", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          amount,
+          side,
+          slippageBps: 50,
+          tokenAddress: token.address,
+          tokenDecimals,
+          walletAddress: solanaWallet.address,
+        }),
+      });
+
+      const payload = (await response.json()) as SwapPrepareResponse;
+
+      if (!response.ok || !payload.swap?.swapTransaction) {
+        throw new Error(payload.error ?? "Unable to prepare swap.");
+      }
+
+      const signed = await signTransaction({
+        transaction: base64ToBytes(payload.swap.swapTransaction),
+        wallet: solanaWallet,
+      });
+
+      const submitResponse = await fetch("/api/swap/submit", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          signedTransaction: bytesToBase64(signed.signedTransaction),
+        }),
+      });
+
+      const submitted = (await submitResponse.json()) as { signature?: string; error?: string };
+
+      if (!submitResponse.ok || !submitted.signature) {
+        throw new Error(submitted.error ?? "Transaction submission failed.");
+      }
+
+      setResultSignature(submitted.signature);
+    } catch (error) {
+      setTradeError(error instanceof Error ? error.message : "Trade failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="rounded-[2rem] border border-black/10 bg-white p-5 shadow-[0_25px_70px_rgba(17,17,17,0.08)]">
@@ -85,12 +195,12 @@ function EnabledTradeComposer({ token }: { token: TokenSummary }) {
             key={value}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-semibold transition",
-              side === value ? "bg-black text-white" : "text-black/60",
-            )}
-            onClick={() => setSide(value)}
-            type="button"
-          >
-            {value === "buy" ? "Buy" : "Sell"}
+            side === value ? "bg-black text-white" : "text-black/60",
+              )}
+              onClick={() => setSide(value)}
+              type="button"
+            >
+              {value === "buy" ? "Buy" : "Sell"}
           </button>
         ))}
       </div>
@@ -142,15 +252,32 @@ function EnabledTradeComposer({ token }: { token: TokenSummary }) {
             ? "bg-[#ff7a00] text-white hover:bg-[#ea6f00]"
             : "bg-black text-white/70",
         )}
-        disabled={!enabled || !authenticated}
+        disabled={!enabled || !authenticated || !walletsReady || !solanaWallet || submitting}
+        onClick={executeTrade}
         type="button"
       >
-        {enabled && authenticated ? `${side === "buy" ? "Buy" : "Sell"} ${token.symbol}` : "Connect Privy to trade"}
+        {submitting
+          ? "Submitting..."
+          : enabled && authenticated
+            ? `${side === "buy" ? "Buy" : "Sell"} ${token.symbol}`
+            : "Connect Privy to trade"}
       </button>
 
+      {resultSignature ? (
+        <a
+          className="mt-3 block text-xs font-semibold text-[#ff7a00] underline underline-offset-4"
+          href={`https://solscan.io/tx/${resultSignature}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View submitted transaction
+        </a>
+      ) : null}
+
+      {tradeError ? <p className="mt-3 text-xs leading-5 text-[#c04a3d]">{tradeError}</p> : null}
+
       <p className="mt-3 text-xs leading-5 text-black/45">
-        This panel already requests live Jupiter quotes. Once your Privy and Jupiter env vars are added, the final
-        transaction signing flow can be enabled against the connected Solana wallet.
+        This panel now prepares swaps on the server, signs them with Privy, and submits them through the configured Solana RPC.
       </p>
     </div>
   );

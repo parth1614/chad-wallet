@@ -1,6 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
+import { defaultSolanaRpcsPlugin } from "@privy-io/react-auth/solana";
 import { createContext, useContext } from "react";
 
 const privyEnabled = Boolean(process.env.NEXT_PUBLIC_PRIVY_APP_ID);
@@ -25,6 +26,7 @@ export function PrivyAppProvider({ children }: { children: React.ReactNode }) {
       <PrivyProvider
         appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
         config={{
+          plugins: [defaultSolanaRpcsPlugin()],
           loginMethods: ["google", "apple"],
           appearance: {
             theme: "light",

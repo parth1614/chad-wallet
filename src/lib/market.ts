@@ -1,6 +1,15 @@
 import "server-only";
 
-import type { ChartCandle, ChartInterval, JupiterQuote, TokenDetailBundle, TokenHolder, TokenSummary, TokenTrade } from "@/lib/types";
+import type {
+  ChartCandle,
+  ChartInterval,
+  JupiterQuote,
+  JupiterSwapTransaction,
+  TokenDetailBundle,
+  TokenHolder,
+  TokenSummary,
+  TokenTrade,
+} from "@/lib/types";
 import { SOL_MINT, createFallbackTokenSummary, getSampleTokenBundle, sampleTrendingTokens } from "@/lib/sample-data";
 
 const BIRDEYE_BASE_URL = "https://public-api.birdeye.so";
@@ -44,6 +53,7 @@ function mapTokenSummary(item: Record<string, unknown>, fallbackRank?: number): 
     liquidity: Number(item.liquidity ?? item.liquidityUsd ?? 0),
     volume24h: Number(item.v24hUSD ?? item.volume24hUSD ?? item.volume_24h_usd ?? item.volume24h ?? 0),
     marketCap: Number(item.mc ?? item.marketCap ?? item.marketcap ?? 0),
+    decimals: Number(item.decimals ?? item.tokenDecimals ?? item.token_decimals ?? 9),
     holders: Number(item.holder ?? item.holders ?? 0),
     rank: Number(item.rank ?? fallbackRank ?? 0),
     fdv: Number(item.fdv ?? item.fdvUsd ?? item.marketCap ?? 0),
@@ -203,6 +213,7 @@ export async function getJupiterQuote(params: {
   outputMint: string;
   amount: string;
   taker?: string;
+  slippageBps?: number;
 }): Promise<JupiterQuote | null> {
   const apiKey = process.env.JUPITER_API_KEY;
 
@@ -221,7 +232,7 @@ export async function getJupiterQuote(params: {
     inputMint: params.inputMint ?? SOL_MINT,
     outputMint: params.outputMint,
     amount: params.amount,
-    slippageBps: "50",
+    slippageBps: String(params.slippageBps ?? 50),
   });
 
   if (params.taker) {
@@ -234,6 +245,40 @@ export async function getJupiterQuote(params: {
         accept: "application/json",
         "x-api-key": apiKey,
       },
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function getJupiterSwapTransaction(params: {
+  quoteResponse: JupiterQuote;
+  userPublicKey: string;
+}): Promise<JupiterSwapTransaction | null> {
+  const apiKey = process.env.JUPITER_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  try {
+    return await fetchJson<JupiterSwapTransaction>(`${JUPITER_BASE_URL}/swap/v1/swap`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        quoteResponse: params.quoteResponse,
+        userPublicKey: params.userPublicKey,
+        dynamicComputeUnitLimit: true,
+        prioritizationFeeLamports: {
+          priorityLevelWithMaxLamports: {
+            maxLamports: 1_000_000,
+            priorityLevel: "veryHigh",
+          },
+        },
+      }),
     });
   } catch {
     return null;
