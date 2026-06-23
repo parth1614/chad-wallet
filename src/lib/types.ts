@@ -30,9 +30,15 @@ export type TokenTrade = {
   timestamp: number;
 };
 
-export type ChartPoint = {
+export type ChartInterval = "15m" | "1H" | "4H" | "1D";
+
+export type ChartCandle = {
   time: number;
-  value: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 };
 
 export type JupiterQuote = {
@@ -48,5 +54,5 @@ export type TokenDetailBundle = {
   summary: TokenSummary;
   holders: TokenHolder[];
   trades: TokenTrade[];
-  chart: ChartPoint[];
+  chart: ChartCandle[];
 };

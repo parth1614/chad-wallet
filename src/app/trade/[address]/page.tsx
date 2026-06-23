@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeftRight, Flame, TrendingUp } from "lucide-react";
@@ -29,9 +30,18 @@ export default async function TradePage({
       <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6 lg:px-8">
         <header className="mb-5 flex flex-col gap-5 rounded-[2rem] border border-black/10 bg-white/82 px-6 py-5 shadow-[0_18px_60px_rgba(17,17,17,0.08)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <Link href="/" className="font-mono text-xs uppercase tracking-[0.24em] text-black/45">
-              Back to landing
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/" className="font-mono text-xs uppercase tracking-[0.24em] text-black/45">
+                Back to landing
+              </Link>
+              <Image
+                src="/brand/chadwallet-dark.png"
+                alt="ChadWallet"
+                width={176}
+                height={40}
+                className="h-8 w-auto"
+              />
+            </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <h1 className="text-4xl font-black tracking-[-0.05em] text-black">{token.symbol}</h1>
               <div className="rounded-full bg-[#fff1dc] px-3 py-1 font-mono text-xs uppercase tracking-[0.22em] text-black/60">
@@ -49,13 +59,29 @@ export default async function TradePage({
               Live market surface designed for the ChadWallet screening task: trending token rail, price chart, holder concentration, live trade tape,
               Privy auth, and a Jupiter-powered quote card.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {trending.slice(0, 6).map((item) => (
+                <Link
+                  key={item.address}
+                  href={`/trade/${item.address}`}
+                  aria-current={item.address === token.address ? "page" : undefined}
+                  className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+                    item.address === token.address
+                      ? "bg-[#ff7a00] text-white shadow-[0_10px_24px_rgba(255,122,0,0.22)]"
+                      : "bg-[#fff1dc] text-black/70 hover:bg-[#ffe0b8] hover:text-black"
+                  }`}
+                >
+                  {item.symbol}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <AuthControls compact />
         </header>
 
-        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
-          <aside className="rounded-[2rem] border border-black/10 bg-white/78 p-4 shadow-[0_18px_60px_rgba(17,17,17,0.06)]">
+        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_360px] xl:items-start">
+          <aside className="rounded-[2rem] border border-black/10 bg-white/78 p-4 shadow-[0_18px_60px_rgba(17,17,17,0.06)] xl:sticky xl:top-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.24em] text-black/40">Trending now</p>
@@ -64,24 +90,41 @@ export default async function TradePage({
               <Flame className="h-5 w-5 text-[#ff7a00]" />
             </div>
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-5 max-h-[calc(100vh-16rem)] space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin]">
               {trending.map((item) => (
                 <Link
                   key={item.address}
                   href={`/trade/${item.address}`}
+                  aria-current={item.address === token.address ? "page" : undefined}
                   className={`block rounded-[1.5rem] border px-4 py-4 transition ${
                     item.address === token.address
-                      ? "border-black bg-black text-white"
+                      ? "border-[#ff7a00] bg-[#111111] text-white shadow-[0_18px_36px_rgba(17,17,17,0.22)]"
                       : "border-black/8 bg-[#fcf7ef] text-black hover:border-black/20"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">{item.symbol}</span>
-                    <span className="font-mono text-xs opacity-65">#{item.rank ?? "--"}</span>
+                    <span className={`font-semibold ${item.address === token.address ? "text-white" : "text-black"}`}>
+                      {item.symbol}
+                    </span>
+                    <span className={`font-mono text-xs ${item.address === token.address ? "text-white/65" : "opacity-65"}`}>
+                      #{item.rank ?? "--"}
+                    </span>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-sm opacity-70">
-                    <span>{formatCurrency(item.price, 6)}</span>
-                    <span className={isPositive(item.priceChange24h) ? "text-[#8ef0bc]" : "text-[#ff998f]"}>
+                  <div className="mt-3 flex items-center justify-between text-sm">
+                    <span className={item.address === token.address ? "text-white/82" : "text-black/72"}>
+                      {formatCurrency(item.price, 6)}
+                    </span>
+                    <span
+                      className={
+                        item.address === token.address
+                          ? isPositive(item.priceChange24h)
+                            ? "text-[#8ef0bc]"
+                            : "text-[#ff998f]"
+                          : isPositive(item.priceChange24h)
+                            ? "text-[#2d9d64]"
+                            : "text-[#c04a3d]"
+                      }
+                    >
                       {formatPercent(item.priceChange24h)}
                     </span>
                   </div>
@@ -114,7 +157,7 @@ export default async function TradePage({
               </div>
 
               <div className="mt-6">
-                <ChartCard data={bundle.chart} />
+                <ChartCard address={token.address} data={bundle.chart} symbol={token.symbol} />
               </div>
             </div>
 
@@ -127,7 +170,7 @@ export default async function TradePage({
                   </div>
                   <TrendingUp className="h-5 w-5 text-[#ff7a00]" />
                 </div>
-                <div className="mt-5 space-y-3">
+                <div className="mt-5 max-h-[420px] space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin]">
                   {bundle.holders.map((holder, index) => (
                     <div key={`${holder.owner}-${index}`} className="rounded-[1.4rem] bg-[#fcf7ef] px-4 py-4">
                       <div className="flex items-center justify-between">
@@ -150,7 +193,7 @@ export default async function TradePage({
                   <ArrowLeftRight className="h-5 w-5 text-[#ff7a00]" />
                 </div>
 
-                <div className="mt-5 space-y-3">
+                <div className="mt-5 max-h-[420px] space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin]">
                   {bundle.trades.map((trade) => (
                     <div key={trade.signature} className="rounded-[1.4rem] bg-[#fcf7ef] px-4 py-4">
                       <div className="flex items-center justify-between">
@@ -180,7 +223,7 @@ export default async function TradePage({
             </div>
           </section>
 
-          <aside className="space-y-5">
+          <aside className="space-y-5 xl:sticky xl:top-5">
             <TradeComposer token={token} />
             <PositionCard token={token} />
           </aside>

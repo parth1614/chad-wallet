@@ -1,12 +1,34 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CandlestickChart, Download, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { CandlestickChart, Download, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { AuthControls } from "@/components/auth/auth-controls";
 import { TokenMarquee } from "@/components/market/token-marquee";
 import { getTrendingTokens } from "@/lib/market";
-import { formatCompactCurrency, formatCurrency, formatPercent, isPositive } from "@/lib/utils";
+import { formatCompactCurrency } from "@/lib/utils";
 
 const APPLE_LINK = "https://apps.apple.com/us/app/chadwallet/id6757367474";
 const PLAY_LINK = "https://play.google.com/store/apps/details?id=xyz.chadwallet.www";
+
+const appStoreAssets = [
+  { src: "/brand/app-store/splash.png", alt: "ChadWallet splash screen" },
+  { src: "/brand/app-store/discover.png", alt: "ChadWallet discover screen" },
+  { src: "/brand/app-store/search.png", alt: "ChadWallet search screen" },
+  { src: "/brand/app-store/token.png", alt: "ChadWallet token screen" },
+  { src: "/brand/app-store/portfolio.png", alt: "ChadWallet portfolio screen" },
+  { src: "/brand/app-store/deposit.png", alt: "ChadWallet deposit screen" },
+  { src: "/brand/app-store/launch.png", alt: "ChadWallet launch screen" },
+  { src: "/brand/app-store/kol.png", alt: "ChadWallet KOL screen" },
+  { src: "/brand/app-store/x.png", alt: "ChadWallet X screen" },
+];
+
+const flowAssets = [
+  { src: "/brand/flow/launch-4.png", alt: "ChadWallet launch campaign" },
+  { src: "/brand/flow/memecoin-4.png", alt: "ChadWallet memecoin campaign" },
+  { src: "/brand/flow/portfolio-4.png", alt: "ChadWallet portfolio campaign" },
+  { src: "/brand/flow/buy-sell-4.png", alt: "ChadWallet buy sell campaign" },
+  { src: "/brand/flow/kol-4.png", alt: "ChadWallet KOL campaign" },
+  { src: "/brand/flow/relaunch-4.png", alt: "ChadWallet relaunch campaign" },
+];
 
 export default async function Home() {
   const tokens = await getTrendingTokens();
@@ -18,13 +40,14 @@ export default async function Home() {
       <main className="noise mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-14 pt-5 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-6 rounded-[2.2rem] border border-black/10 bg-white/78 px-6 py-5 shadow-[0_24px_90px_rgba(17,17,17,0.08)] backdrop-blur md:flex-row md:items-center md:justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="pulse-glow flex h-11 w-11 items-center justify-center rounded-2xl bg-black text-lg font-black text-[#ffd166]">
-              C
-            </div>
-            <div>
-              <div className="text-lg font-black tracking-tight text-black">ChadWallet</div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-black/45">Solana trading app</div>
-            </div>
+            <Image
+              src="/brand/chadwallet-dark.png"
+              alt="ChadWallet"
+              width={176}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           <nav className="flex flex-wrap items-center gap-3 text-sm text-black/62">
@@ -57,7 +80,7 @@ export default async function Home() {
                 href={APPLE_LINK}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-black/85"
+                className="rounded-full bg-[#ff7a00] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#e96f00] hover:text-white"
               >
                 Download iPhone app
               </a>
@@ -65,7 +88,7 @@ export default async function Home() {
                 href={PLAY_LINK}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-black/10 bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-black hover:text-white"
+                className="rounded-full border border-[#0b65d8] bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#edf5ff] hover:text-black"
               >
                 Download Android app
               </a>
@@ -90,10 +113,13 @@ export default async function Home() {
             <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-[#ffd166]/30 blur-3xl" />
             <div className="relative rounded-[2.2rem] border border-black/10 bg-[#111111] p-5 text-white shadow-[0_40px_100px_rgba(17,17,17,0.2)]">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-mono text-xs uppercase tracking-[0.24em] text-white/45">Chad signal</div>
-                  <div className="mt-2 text-3xl font-black">{spotlight.symbol}</div>
-                </div>
+                <Image
+                  src="/brand/chadwallet-light.png"
+                  alt="ChadWallet"
+                  width={176}
+                  height={40}
+                  className="h-9 w-auto"
+                />
                 <Link
                   href={`/trade/${spotlight.address}`}
                   className="rounded-full bg-[#ff7a00] px-4 py-2 text-sm font-semibold text-white"
@@ -102,44 +128,35 @@ export default async function Home() {
                 </Link>
               </div>
 
-              <div className="mt-6 rounded-[1.8rem] bg-[#1d1d1d] p-4">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.24em] text-white/38">Price</p>
-                    <p className="mt-2 text-3xl font-semibold">{formatCurrency(spotlight.price, 6)}</p>
-                  </div>
-                  <div className={isPositive(spotlight.priceChange24h) ? "text-[#8ef0bc]" : "text-[#ff998f]"}>
-                    {formatPercent(spotlight.priceChange24h)}
-                  </div>
-                </div>
-
-                <div className="mt-5 h-40 rounded-[1.4rem] bg-gradient-to-b from-[#ff7a00]/30 to-transparent p-4">
-                  <div className="flex h-full items-end gap-2">
-                    {[34, 28, 38, 52, 47, 55, 66, 58, 72, 74, 78, 84].map((height) => (
-                      <div
-                        key={height}
-                        className="flex-1 rounded-full bg-[#ffd166]"
-                        style={{ height: `${height}%` }}
-                      />
-                    ))}
-                  </div>
-                </div>
+              <div className="mt-5 overflow-hidden rounded-[1.8rem] border border-white/10">
+                <Image
+                  src="/brand/flow/launch-4.png"
+                  alt="ChadWallet launch screen"
+                  width={3840}
+                  height={2160}
+                  className="h-auto w-full"
+                />
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {tokens.slice(0, 4).map((token) => (
-                  <Link
-                    key={token.address}
-                    href={`/trade/${token.address}`}
-                    className="rounded-[1.4rem] border border-white/10 bg-white/5 p-4 transition hover:bg-white/8"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold">{token.symbol}</span>
-                      <ArrowRight className="h-4 w-4 text-white/45" />
-                    </div>
-                    <p className="mt-3 text-sm text-white/52">{formatCurrency(token.price, 6)}</p>
-                  </Link>
-                ))}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="overflow-hidden rounded-[1.5rem] border border-white/10">
+                  <Image
+                    src="/brand/flow/memecoin-4.png"
+                    alt="ChadWallet memecoin discovery screen"
+                    width={3840}
+                    height={2160}
+                    className="h-auto w-full"
+                  />
+                </div>
+                <div className="overflow-hidden rounded-[1.5rem] border border-white/10">
+                  <Image
+                    src="/brand/flow/portfolio-4.png"
+                    alt="ChadWallet portfolio screen"
+                    width={3840}
+                    height={2160}
+                    className="h-auto w-full"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -171,6 +188,89 @@ export default async function Home() {
           ))}
         </section>
 
+        <section className="grid gap-6 py-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+          <div className="rounded-[2.2rem] border border-black/10 bg-white/78 p-5 shadow-[0_24px_80px_rgba(17,17,17,0.08)]">
+            <div className="overflow-hidden rounded-[1.6rem] border border-black/10 bg-black">
+              <video
+                autoPlay
+                className="h-auto w-full"
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              >
+                <source src="/brand/video/chadwallet.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </div>
+
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.25em] text-black/45">Official brand motion</p>
+            <h2 className="mt-3 text-4xl font-black tracking-[-0.04em] text-black">Real ChadWallet product footage, not reconstructed mockups.</h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-black/62">
+              The page now uses the actual launch video plus the exported App Store and growth-flow assets from the shared Drive folder, so the screen reads like ChadWallet rather than a generic crypto landing page.
+            </p>
+          </div>
+        </section>
+
+        <section className="py-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.25em] text-black/45">App Store set</p>
+              <h2 className="mt-3 text-4xl font-black tracking-[-0.04em] text-black">Every product screen from the share pack.</h2>
+            </div>
+            <a
+              href={APPLE_LINK}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#fff1dc] hover:text-black"
+            >
+              View iPhone listing
+            </a>
+          </div>
+
+          <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
+            {appStoreAssets.map((asset) => (
+              <div
+                key={asset.src}
+                className="min-w-[220px] overflow-hidden rounded-[2rem] border border-black/10 bg-white p-2 shadow-[0_18px_50px_rgba(17,17,17,0.07)]"
+              >
+                <Image
+                  src={asset.src}
+                  alt={asset.alt}
+                  width={1242}
+                  height={2688}
+                  className="h-[420px] w-auto rounded-[1.5rem]"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="py-8">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.25em] text-black/45">Flow assets</p>
+            <h2 className="mt-3 text-4xl font-black tracking-[-0.04em] text-black">Campaign-grade visuals for discovery, launches, and trading.</h2>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {flowAssets.map((asset) => (
+              <div
+                key={asset.src}
+                className="overflow-hidden rounded-[2rem] border border-black/10 bg-[#111111] p-3 shadow-[0_20px_60px_rgba(17,17,17,0.12)]"
+              >
+                <Image
+                  src={asset.src}
+                  alt={asset.alt}
+                  width={3840}
+                  height={2160}
+                  className="h-auto w-full rounded-[1.4rem]"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section className="mt-4 rounded-[2.4rem] bg-black px-6 py-8 text-white sm:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
@@ -182,13 +282,22 @@ export default async function Home() {
               </p>
             </div>
 
-            <Link
-              href={`/trade/${spotlight.address}`}
-              className="inline-flex items-center gap-2 rounded-full bg-[#ff7a00] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ea6f00]"
-            >
-              Open live preview
-              <Download className="h-4 w-4" />
-            </Link>
+            <div className="flex flex-col items-start gap-4">
+              <Image
+                src="/brand/chadwallet-light.png"
+                alt="ChadWallet"
+                width={176}
+                height={40}
+                className="h-10 w-auto"
+              />
+              <Link
+                href={`/trade/${spotlight.address}`}
+                className="inline-flex items-center gap-2 rounded-full bg-[#ff7a00] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ea6f00]"
+              >
+                Open live preview
+                <Download className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </section>
       </main>

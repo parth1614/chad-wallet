@@ -1,7 +1,7 @@
 import "server-only";
 
-import type { JupiterQuote, TokenDetailBundle, TokenHolder, TokenSummary, TokenTrade } from "@/lib/types";
-import { SOL_MINT, getSampleTokenBundle, sampleTrendingTokens } from "@/lib/sample-data";
+import type { ChartCandle, ChartInterval, JupiterQuote, TokenDetailBundle, TokenHolder, TokenSummary, TokenTrade } from "@/lib/types";
+import { SOL_MINT, createFallbackTokenSummary, getSampleTokenBundle, sampleTrendingTokens } from "@/lib/sample-data";
 
 const BIRDEYE_BASE_URL = "https://public-api.birdeye.so";
 const JUPITER_BASE_URL = "https://api.jup.ag";
@@ -71,6 +71,33 @@ function mapTrade(item: Record<string, unknown>): TokenTrade {
   };
 }
 
+function getChartWindow(interval: ChartInterval) {
+  const now = Math.floor(Date.now() / 1000);
+
+  switch (interval) {
+    case "15m":
+      return { type: "15m", timeFrom: now - 60 * 60 * 12, timeTo: now };
+    case "4H":
+      return { type: "4H", timeFrom: now - 60 * 60 * 24 * 14, timeTo: now };
+    case "1D":
+      return { type: "1D", timeFrom: now - 60 * 60 * 24 * 90, timeTo: now };
+    case "1H":
+    default:
+      return { type: "1H", timeFrom: now - 60 * 60 * 24 * 5, timeTo: now };
+  }
+}
+
+function mapChartCandle(item: Record<string, unknown>): ChartCandle {
+  return {
+    time: Number(item.unixTime ?? item.time ?? item.unix_time ?? 0),
+    open: Number(item.o ?? item.open ?? item.value ?? 0),
+    high: Number(item.h ?? item.high ?? item.value ?? 0),
+    low: Number(item.l ?? item.low ?? item.value ?? 0),
+    close: Number(item.c ?? item.close ?? item.value ?? 0),
+    volume: Number(item.v ?? item.volume ?? item.baseVolume ?? 0),
+  };
+}
+
 export async function getTrendingTokens(): Promise<TokenSummary[]> {
   const headers = birdeyeHeaders();
 
@@ -97,12 +124,14 @@ export async function getTrendingTokens(): Promise<TokenSummary[]> {
 
 export async function getTokenBundle(address: string): Promise<TokenDetailBundle> {
   const headers = birdeyeHeaders();
+  const fallbackSummary = sampleTrendingTokens.find((token) => token.address === address) ?? createFallbackTokenSummary(address);
 
   if (!headers) {
-    return getSampleTokenBundle(address);
+    return getSampleTokenBundle(address, fallbackSummary);
   }
 
   try {
+    const initialChart = getChartWindow("1H");
     const [overview, holders, trades, chart] = await Promise.all([
       fetchJson<{ data?: Record<string, unknown> }>(
         `${BIRDEYE_BASE_URL}/defi/token_overview?address=${address}`,
@@ -117,27 +146,55 @@ export async function getTokenBundle(address: string): Promise<TokenDetailBundle
         { headers },
       ),
       fetchJson<{ data?: { items?: Record<string, unknown>[] } }>(
-        `${BIRDEYE_BASE_URL}/defi/v3/ohlcv?address=${address}&type=1H&time_from=${Math.floor(Date.now() / 1000) - 86400}&time_to=${Math.floor(Date.now() / 1000)}`,
+        `${BIRDEYE_BASE_URL}/defi/v3/ohlcv?address=${address}&type=${initialChart.type}&time_from=${initialChart.timeFrom}&time_to=${initialChart.timeTo}`,
         { headers },
       ),
     ]);
 
-    const fallback = getSampleTokenBundle(address);
+    const fallback = getSampleTokenBundle(address, fallbackSummary);
     const chartItems = chart.data?.items ?? [];
 
+    const overviewSummary = mapTokenSummary(overview.data ?? {}, fallback.summary.rank);
+    const summary = {
+      ...fallback.summary,
+      ...overviewSummary,
+      address: overviewSummary.address || fallback.summary.address,
+      symbol: overviewSummary.symbol || fallback.summary.symbol,
+      name: overviewSummary.name || fallback.summary.name,
+      price: overviewSummary.price || fallback.summary.price,
+    };
+
     return {
-      summary: mapTokenSummary(overview.data ?? {}, fallback.summary.rank),
+      summary,
       holders: (holders.data?.items ?? holders.data?.holders ?? []).map(mapHolder),
       trades: (trades.data?.items ?? trades.data?.trades ?? []).map(mapTrade),
-      chart: chartItems.length
-        ? chartItems.map((item) => ({
-            time: Number(item.unixTime ?? item.time ?? item.unix_time ?? 0),
-            value: Number(item.c ?? item.close ?? item.value ?? 0),
-          }))
-        : fallback.chart,
+      chart: chartItems.length ? chartItems.map(mapChartCandle) : fallback.chart,
     };
   } catch {
-    return getSampleTokenBundle(address);
+    return getSampleTokenBundle(address, fallbackSummary);
+  }
+}
+
+export async function getTokenChart(address: string, interval: ChartInterval = "1H"): Promise<ChartCandle[]> {
+  const headers = birdeyeHeaders();
+  const fallback = getSampleTokenBundle(address, sampleTrendingTokens.find((token) => token.address === address) ?? createFallbackTokenSummary(address)).chart;
+
+  if (!headers) {
+    return fallback;
+  }
+
+  const chartWindow = getChartWindow(interval);
+
+  try {
+    const chart = await fetchJson<{ data?: { items?: Record<string, unknown>[] } }>(
+      `${BIRDEYE_BASE_URL}/defi/v3/ohlcv?address=${address}&type=${chartWindow.type}&time_from=${chartWindow.timeFrom}&time_to=${chartWindow.timeTo}`,
+      { headers },
+    );
+
+    const chartItems = chart.data?.items ?? [];
+    return chartItems.length ? chartItems.map(mapChartCandle) : fallback;
+  } catch {
+    return fallback;
   }
 }
 

@@ -1,4 +1,4 @@
-import type { TokenDetailBundle, TokenSummary } from "@/lib/types";
+import type { ChartCandle, TokenDetailBundle, TokenSummary } from "@/lib/types";
 
 export const SOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -83,21 +83,50 @@ export const sampleTrendingTokens: TokenSummary[] = [
   },
 ];
 
-function createChart(basePrice: number) {
+export function createFallbackTokenSummary(address: string): TokenSummary {
+  const short = address.slice(0, 4).toUpperCase();
+
+  return {
+    address,
+    symbol: short || "TOKEN",
+    name: `Token ${short || "Fallback"}`,
+    logo: "",
+    price: 0.000001,
+    priceChange24h: 0,
+    liquidity: 0,
+    volume24h: 0,
+    marketCap: 0,
+    holders: 0,
+    rank: 0,
+    fdv: 0,
+  };
+}
+
+function createChart(basePrice: number): ChartCandle[] {
   return Array.from({ length: 24 }, (_, index) => {
     const drift = Math.sin(index / 3) * basePrice * 0.12;
     const move = (index - 12) * basePrice * 0.004;
+    const open = Number((basePrice + drift + move).toFixed(6));
+    const close = Number((open * (1 + Math.sin(index / 2.4) * 0.035)).toFixed(6));
+    const high = Number((Math.max(open, close) * 1.045).toFixed(6));
+    const low = Number((Math.min(open, close) * 0.955).toFixed(6));
+
     return {
       time: Math.floor(Date.now() / 1000) - (23 - index) * 3600,
-      value: Number((basePrice + drift + move).toFixed(6)),
+      open,
+      high,
+      low,
+      close,
+      volume: Math.round(65000 + index * 3800 + Math.abs(Math.sin(index)) * 18000),
     };
   });
 }
 
-export function getSampleTokenBundle(address: string): TokenDetailBundle {
+export function getSampleTokenBundle(address: string, summaryOverride?: TokenSummary): TokenDetailBundle {
   const summary =
+    summaryOverride ??
     sampleTrendingTokens.find((token) => token.address === address) ??
-    sampleTrendingTokens[0];
+    createFallbackTokenSummary(address);
 
   return {
     summary,

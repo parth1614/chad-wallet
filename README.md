@@ -11,7 +11,7 @@ Next.js build for the ChadWallet founding-engineer screen.
 - BirdEye-backed market data adapters with seeded fallback data
 - Jupiter quote preview route
 - Alchemy-backed Solana wallet balance route
-- Supabase-ready schema and SSR/browser helpers
+- Supabase-ready schema and server-only helpers
 
 ## Run locally
 
@@ -26,12 +26,16 @@ Open `http://localhost:3000`.
 ## Required env vars
 
 ```bash
+DATABASE_URL=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
 NEXT_PUBLIC_PRIVY_APP_ID=
+NEXT_PUBLIC_PRIVY_CLIENT_ID=
+PRIVY_APP_ID=
+PRIVY_CLIENT_ID=
 JUPITER_API_KEY=
 BIRDEYE_API_KEY=
 ALCHEMY_RPC_URL=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 The app still renders without keys so the UI can be reviewed before final service access is added.
@@ -47,7 +51,6 @@ Apply [schema.sql](/Users/root-parth/Documents/ChadWallet/supabase/schema.sql) t
 
 Helpers:
 
-- [client.ts](/Users/root-parth/Documents/ChadWallet/src/lib/supabase/client.ts)
 - [server.ts](/Users/root-parth/Documents/ChadWallet/src/lib/supabase/server.ts)
 
 ## Official docs used
